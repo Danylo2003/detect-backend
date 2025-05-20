@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: .
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+      - ./media:/app/media
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: >
+      bash -c "python manage.py migrate &&
+               python manage.py collectstatic --noinput &&
+               gunicorn security_ai_system.wsgi:application --bind 0.0.0.0:8000"
+
+  celery:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - web
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+      - ./media:/app/media
+      - ./models:/app/models
+      - ./logs:/app/logs
+    command: celery -A security_ai_system worker -l info
+
+  celery-beat:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - web
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+    command: celery -A security_ai_system beat -l info
+
+volumes:
+  postgres_data:
+  redis_data:
