@@ -21,7 +21,6 @@ class UserRegisterView(generics.CreateAPIView):
     
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
@@ -47,10 +46,8 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
-        
         user = authenticate(request, email=email, password=password)
         
         if user is not None:

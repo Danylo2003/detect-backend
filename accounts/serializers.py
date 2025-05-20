@@ -6,23 +6,21 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user objects."""
-    
     class Meta:
         model = User
-        fields = ('id', 'email', 'full_name', 'role', 
+        fields = ('id', 'email', 'full_name', 'role', 'username',
                   'phone_number', 'profile_picture', 'date_joined', 'last_login')
         read_only_fields = ('id', 'date_joined', 'last_login')
         
 class UserCreateSerializer(serializers.ModelSerializer):
     """Serializer for user creation."""
-    
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     # password_confirm = serializers.CharField(write_only=True, required=True)
     
     class Meta:
         model = User
         fields = ('id', 'email', 'password', 'full_name', 
-                  'role', 
+                  'role', 'username',
                   'phone_number')
         extra_kwargs = {
             'full_name': {'required': True},
