@@ -136,7 +136,7 @@ venv.bak/
 static/
 staticFiles/
 
-# Spyder project settings
+
 .spyderproject
 .spyproject
 
