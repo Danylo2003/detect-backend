@@ -49,13 +49,8 @@ class Camera(models.Model):
     
     def get_stream_url(self):
         """Return the full stream URL with authentication if needed."""
-        if self.camera_type == 'rtsp' and self.username and self.password:
-            # Parse the URL to insert authentication
-            if '://' in self.stream_url:
-                protocol, rest = self.stream_url.split('://', 1)
-                return f"{protocol}://{self.username}:{self.password}@{rest}"
+        if self.username and self.password:
             return self.stream_url
-        return self.stream_url
     
     def update_status(self, status):
         """Update the camera status."""

@@ -14,6 +14,21 @@ class CameraCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Camera
         exclude = ('user', 'status', 'last_online')
+
+    def validate_stream_url(self, value):
+        """
+        Validate that a stream URL is provided and not already registered by the same user.
+        """
+        if not value:
+            raise serializers.ValidationError("A stream URL is required.")
+        
+        # Check if a camera with this stream URL already exists for this user
+        request = self.context.get('request')
+        if request and request.user:
+            if Camera.objects.filter(user=request.user, stream_url=value).exists():
+                raise serializers.ValidationError("This camera is already registered.")
+            
+        return value
     
     def create(self, validated_data):
         """Create and return a new camera instance."""
@@ -28,6 +43,24 @@ class CameraUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Camera
         exclude = ('user', 'status', 'last_online', 'created_at', 'updated_at')
+    def validate_stream_url(self, value):
+        """
+        Validate that a stream URL is provided and not already registered by another camera
+        belonging to the same user.
+        """
+        if not value:
+            raise serializers.ValidationError("A stream URL is required.")
+        
+        # Check if another camera with this stream URL already exists for this user
+        request = self.context.get('request')
+        instance = self.instance
+        
+        if request and request.user and instance:
+            # Check if any other camera owned by this user has this URL (exclude current camera)
+            if Camera.objects.filter(user=request.user).exclude(id=instance.id).filter(stream_url=value).exists():
+                raise serializers.ValidationError("This camera is already registered.")
+                
+        return value
 
 class CameraStatusSerializer(serializers.ModelSerializer):
     """Serializer for camera status updates."""

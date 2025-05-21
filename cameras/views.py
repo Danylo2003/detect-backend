@@ -43,11 +43,15 @@ class CameraViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create a new camera."""
-        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         camera = serializer.save()
-        
+
+        connection_status = self._check_camera_connection(camera)
+        camera.status = connection_status
+        if connection_status == 'online':
+            camera.last_online = timezone.now()
+        camera.save(update_fields=['status', 'last_online', 'updated_at'])
         headers = self.get_success_headers(serializer.data)
         return Response({
             'success': True,
@@ -118,6 +122,26 @@ class CameraViewSet(viewsets.ModelViewSet):
             'message': 'Camera deleted successfully.',
             'errors': []
         }, status=status.HTTP_200_OK)
+
+    def _check_camera_connection(self, camera):
+        try:
+            stream_url = camera.get_stream_url()
+            cap = cv2.VideoCapture(stream_url)
+            if cap.isOpened():
+                ret, _ = cap.read()
+                cap.release()
+                if ret:
+                    logger.info(f"Camera connection successful: {camera.id} - {camera.name}")
+                    return 'online'
+                else:
+                    logger.warning(f"Camera connected but failed to read frame: {camera.id} - {camera.name}")
+                    return 'error'
+            else:
+                logger.warning(f"Failed to connect to camera: {camera.id} - {camera.name}")
+                return 'offline'
+        except Exception as e:
+            logger.error(f"Error checking camera connection: {camera.id} - {camera.name} - {str(e)}")
+            return 'error'
     
     @action(detail=True, methods=['get'])
     def stream(self, request, pk=None):
