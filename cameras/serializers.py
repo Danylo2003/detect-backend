@@ -7,7 +7,7 @@ class CameraSerializer(serializers.ModelSerializer):
     class Meta:
         model = Camera
         fields = '__all__'
-        read_only_fields = ('id', 'user', 'status', 'last_online', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'status', 'stream_url', 'last_online', 'created_at', 'updated_at')
 
 class CameraCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new camera."""
@@ -75,7 +75,7 @@ class CameraListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Camera
-        fields = ('id', 'name', 'location', 'camera_type', 'status', 'last_online')
+        fields = ('id', 'name', 'stream_url', 'status', 'last_online')
         read_only_fields = fields
 
 class CameraSettingsSerializer(serializers.ModelSerializer):
