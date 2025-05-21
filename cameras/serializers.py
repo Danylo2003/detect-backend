@@ -11,7 +11,6 @@ class CameraSerializer(serializers.ModelSerializer):
 
 class CameraCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new camera."""
-    
     class Meta:
         model = Camera
         exclude = ('user', 'status', 'last_online')
@@ -20,6 +19,7 @@ class CameraCreateSerializer(serializers.ModelSerializer):
         """Create and return a new camera instance."""
         user = self.context['request'].user
         camera = Camera.objects.create(user=user, **validated_data)
+        
         return camera
 
 class CameraUpdateSerializer(serializers.ModelSerializer):

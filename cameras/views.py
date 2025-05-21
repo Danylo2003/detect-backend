@@ -43,6 +43,7 @@ class CameraViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create a new camera."""
+        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         camera = serializer.save()
@@ -192,27 +193,27 @@ class CameraViewSet(viewsets.ModelViewSet):
             'errors': []
         })
     
-    @action(detail=True, methods=['get', 'put', 'patch'])
-    def settings(self, request, pk=None):
-        """Get or update camera detection settings."""
-        camera = self.get_object()
+    # @action(detail=True, methods=['get', 'put', 'patch'])
+    # def settings(self, request, pk=None):
+    #     """Get or update camera detection settings."""
+    #     camera = self.get_object()
         
-        if request.method == 'GET':
-            serializer = CameraSettingsSerializer(camera)
-            return Response({
-                'success': True,
-                'data': serializer.data,
-                'message': 'Camera settings retrieved successfully.',
-                'errors': []
-            })
+    #     if request.method == 'GET':
+    #         serializer = CameraSettingsSerializer(camera)
+    #         return Response({
+    #             'success': True,
+    #             'data': serializer.data,
+    #             'message': 'Camera settings retrieved successfully.',
+    #             'errors': []
+    #         })
         
-        serializer = CameraSettingsSerializer(camera, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        camera = serializer.save()
+    #     serializer = CameraSettingsSerializer(camera, data=request.data, partial=True)
+    #     serializer.is_valid(raise_exception=True)
+    #     camera = serializer.save()
         
-        return Response({
-            'success': True,
-            'data': serializer.data,
-            'message': 'Camera settings updated successfully.',
-            'errors': []
-        })
+    #     return Response({
+    #         'success': True,
+    #         'data': serializer.data,
+    #         'message': 'Camera settings updated successfully.',
+    #         'errors': []
+    #     })

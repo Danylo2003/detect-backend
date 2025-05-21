@@ -6,13 +6,6 @@ User = get_user_model()
 class Camera(models.Model):
     """Camera model for storing camera information."""
     
-    CAMERA_TYPE_CHOICES = (
-        ('ip', 'IP Camera'),
-        ('rtsp', 'RTSP Camera'),
-        ('usb', 'USB Camera'),
-        ('onvif', 'ONVIF Camera'),
-    )
-    
     STATUS_CHOICES = (
         ('online', 'Online'),
         ('offline', 'Offline'),
@@ -21,13 +14,9 @@ class Camera(models.Model):
     )
     
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    location = models.CharField(max_length=200, blank=True, null=True)
-    camera_type = models.CharField(max_length=20, choices=CAMERA_TYPE_CHOICES, default='rtsp')
     stream_url = models.CharField(max_length=500)
     username = models.CharField(max_length=100, blank=True, null=True)
     password = models.CharField(max_length=100, blank=True, null=True)
-    port = models.IntegerField(default=554)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='offline')
     last_online = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
