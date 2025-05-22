@@ -16,3 +16,5 @@ whitenoise
 celery
 redis
 boto3
+channels
+channels_redis
