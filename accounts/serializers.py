@@ -15,7 +15,6 @@ class UserSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     """Serializer for user creation."""
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    # password_confirm = serializers.CharField(write_only=True, required=True)
     
     class Meta:
         model = User
@@ -26,17 +25,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'full_name': {'required': True},
             'email': {'required': True}
         }
-    
-    # def validate(self, attrs):
-    #     """Validate that the passwords match."""
-    #     if attrs['password'] != attrs['password_confirm']:
-    #         raise serializers.ValidationError({"password": "Password fields didn't match."})
-    #     return attrs
-    
     def create(self, validated_data):
         """Create and return a new user."""
-        # Remove password_confirm from the data
-        # validated_data.pop('password_confirm')
+        validated_data['is_active'] = True
+        validated_data['status'] = 'active'
         
         user = User.objects.create_user(**validated_data)
         return user

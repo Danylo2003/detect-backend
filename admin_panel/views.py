@@ -1,3 +1,5 @@
+# admin_panel/views.py (Updated UserAdminViewSet section)
+
 from rest_framework import viewsets, generics, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -29,11 +31,11 @@ class UserAdminViewSet(viewsets.ModelViewSet):
     
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
     serializer_class = UserAdminSerializer
-    queryset = User.objects.all()
     
     def get_queryset(self):
-        """Get all users with additional counts."""
-        queryset = User.objects.all().order_by('-date_joined')
+        """Get all non-admin users with additional counts."""
+        # Only get users with role='user' (exclude admins and managers)
+        queryset = User.objects.filter(role='user').order_by('-date_joined')
         
         # Annotate with camera and alert counts
         queryset = queryset.annotate(
@@ -42,9 +44,9 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         )
         
         # Apply filters if provided
-        role_filter = self.request.query_params.get('role')
-        if role_filter:
-            queryset = queryset.filter(role=role_filter)
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
         
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
@@ -54,8 +56,8 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(
                 Q(email__icontains=search) |
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search)
+                Q(full_name__icontains=search) |
+                Q(phone_number__icontains=search)
             )
         
         return queryset
@@ -67,7 +69,7 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         return self.serializer_class
     
     def list(self, request, *args, **kwargs):
-        """List all users."""
+        """List all non-admin users."""
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
         
@@ -110,10 +112,42 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         
+        # Re-fetch with annotations
+        instance = self.get_queryset().get(pk=instance.pk)
         return Response({
             'success': True,
             'data': UserAdminSerializer(instance).data,
             'message': 'User updated successfully.',
+            'errors': []
+        })
+    
+    @action(detail=True, methods=['post'])
+    def block(self, request, pk=None):
+        """Block a user."""
+        user = self.get_object()
+        user.block_user()
+        
+        # Re-fetch with annotations
+        user = self.get_queryset().get(pk=user.pk)
+        return Response({
+            'success': True,
+            'data': UserAdminSerializer(user).data,
+            'message': 'User blocked successfully.',
+            'errors': []
+        })
+    
+    @action(detail=True, methods=['post'])
+    def unblock(self, request, pk=None):
+        """Unblock a user."""
+        user = self.get_object()
+        user.unblock_user()
+        
+        # Re-fetch with annotations
+        user = self.get_queryset().get(pk=user.pk)
+        return Response({
+            'success': True,
+            'data': UserAdminSerializer(user).data,
+            'message': 'User unblocked successfully.',
             'errors': []
         })
     
@@ -124,6 +158,8 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         user.is_active = True
         user.save()
         
+        # Re-fetch with annotations
+        user = self.get_queryset().get(pk=user.pk)
         return Response({
             'success': True,
             'data': UserAdminSerializer(user).data,
@@ -138,13 +174,49 @@ class UserAdminViewSet(viewsets.ModelViewSet):
         user.is_active = False
         user.save()
         
+        # Re-fetch with annotations
+        user = self.get_queryset().get(pk=user.pk)
         return Response({
             'success': True,
             'data': UserAdminSerializer(user).data,
             'message': 'User deactivated successfully.',
             'errors': []
         })
-
+    
+    @action(detail=True, methods=['post'])
+    def update_status(self, request, pk=None):
+        """Update user status based on action."""
+        user = self.get_object()
+        action = request.data.get('action')
+        
+        if action == 'Block':
+            user.block_user()
+            message = 'User blocked successfully.'
+        elif action == 'Unblock':
+            user.unblock_user()
+            message = 'User unblocked successfully.'
+        elif action == 'Delete':
+            # For delete, we might want to deactivate instead of hard delete
+            user.is_active = False
+            user.save()
+            message = 'User deactivated successfully.'
+        else:
+            return Response({
+                'success': False,
+                'data': {},
+                'message': 'Invalid action.',
+                'errors': ['Action must be Block, Unblock, or Delete.']
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Re-fetch with annotations
+        user = self.get_queryset().get(pk=user.pk)
+        return Response({
+            'success': True,
+            'data': UserAdminSerializer(user).data,
+            'message': message,
+            'errors': []
+        })
+        
 class SystemStatusViewSet(viewsets.GenericViewSet):
     """ViewSet for system status and metrics."""
     

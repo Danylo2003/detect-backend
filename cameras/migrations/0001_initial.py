@@ -19,13 +19,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('location', models.CharField(blank=True, max_length=200, null=True)),
-                ('camera_type', models.CharField(choices=[('ip', 'IP Camera'), ('rtsp', 'RTSP Camera'), ('usb', 'USB Camera'), ('onvif', 'ONVIF Camera')], default='rtsp', max_length=20)),
                 ('stream_url', models.CharField(max_length=500)),
                 ('username', models.CharField(blank=True, max_length=100, null=True)),
                 ('password', models.CharField(blank=True, max_length=100, null=True)),
-                ('port', models.IntegerField(default=554)),
                 ('status', models.CharField(choices=[('online', 'Online'), ('offline', 'Offline'), ('inactive', 'Inactive'), ('error', 'Error')], default='offline', max_length=20)),
                 ('last_online', models.DateTimeField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),

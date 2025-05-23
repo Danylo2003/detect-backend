@@ -10,6 +10,11 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError(_('The Email field must be set'))
         email = self.normalize_email(email)
+        
+        # Ensure is_active is True by default for new users
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('status', 'active')
+        
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -21,6 +26,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('role', 'admin')
+        extra_fields.setdefault('status', 'active')
         
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))
@@ -37,6 +43,10 @@ class User(AbstractUser):
         ('manager', 'Manager'),
         ('user', 'User'),
     )
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('blocked', 'Blocked'),
+    )
     
     email = models.EmailField(_('email address'), unique=True)
     username = models.CharField(max_length=150, unique=True, null=True, blank=True)
@@ -48,6 +58,13 @@ class User(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        help_text='User account status'
+    )
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name']
@@ -76,3 +93,13 @@ class User(AbstractUser):
     def is_manager(self):
         """Check if the user is a manager."""
         return self.role == 'manager'
+
+    def block_user(self):
+        """Block the user account."""
+        self.status = 'blocked'
+        self.save(update_fields=['status'])
+    
+    def unblock_user(self):
+        """Unblock the user account."""
+        self.status = 'active'
+        self.save(update_fields=['status'])

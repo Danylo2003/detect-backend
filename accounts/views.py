@@ -1,3 +1,5 @@
+# accounts/views.py - Fixed version without @action decorator
+
 from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -78,15 +80,28 @@ class UserLogoutView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     
     def post(self, request):
+        # Check if this is a permanent logout (account deactivation)
+        deactivate = request.data.get('deactivate_account', False)
+        
+        if deactivate:
+            # User is leaving the platform
+            user = request.user
+            user.is_active = False
+            user.status = 'blocked'
+            user.save(update_fields=['is_active', 'status'])
+        
         try:
             refresh_token = request.data.get('refresh')
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            
+            message = 'User logged out and account deactivated.' if deactivate else 'User logged out successfully.'
             
             return Response({
                 'success': True,
                 'data': {},
-                'message': 'User logged out successfully.',
+                'message': message,
                 'errors': []
             })
         except Exception as e:
@@ -130,6 +145,77 @@ class UserDetailsView(generics.RetrieveUpdateAPIView):
             'message': 'User details updated successfully.',
             'errors': []
         })
+
+class DeactivateAccountView(APIView):
+    """View for deactivating user account."""
+    
+    permission_classes = (permissions.IsAuthenticated,)
+    
+    def post(self, request):
+        """Deactivate user account (user leaving the platform)."""
+        user = request.user
+        
+        # Set is_active to False and status to blocked
+        user.is_active = False
+        user.status = 'blocked'
+        user.save(update_fields=['is_active', 'status'])
+        
+        return Response({
+            'success': True,
+            'data': {},
+            'message': 'Your account has been deactivated successfully.',
+            'errors': []
+        })
+
+class ReactivateAccountView(APIView):
+    """View for reactivating user account."""
+    
+    permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request):
+        """Reactivate user account (user returning to the platform)."""
+        email = request.data.get('email')
+        password = request.data.get('password')
+        
+        if not email or not password:
+            return Response({
+                'success': False,
+                'data': {},
+                'message': 'Email and password are required.',
+                'errors': ['Missing credentials.']
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Authenticate user
+        user = authenticate(request, email=email, password=password)
+        
+        if user is not None:
+            # Set is_active to True and status to active
+            user.is_active = True
+            user.status = 'active'
+            user.save(update_fields=['is_active', 'status'])
+            
+            # Generate new tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user': UserSerializer(user).data,
+                    'tokens': {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    }
+                },
+                'message': 'Your account has been reactivated successfully.',
+                'errors': []
+            })
+        else:
+            return Response({
+                'success': False,
+                'data': {},
+                'message': 'Invalid credentials or account not found.',
+                'errors': ['Authentication failed.']
+            }, status=status.HTTP_401_UNAUTHORIZED)
 
 class ChangePasswordView(APIView):
     """View for changing user's password."""

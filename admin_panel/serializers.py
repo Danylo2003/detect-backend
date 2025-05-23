@@ -54,8 +54,9 @@ class UserAdminSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'email', 'full_name', 'role', 'phone_number',
             'profile_picture', 'date_joined', 'last_login', 'is_active',
-            'subscription_details', 'cameras_count', 'alerts_count'
+            'status', 'subscription_details', 'cameras_count', 'alerts_count'
         )
+        read_only_fields = ('id', 'date_joined', 'last_login', 'cameras_count', 'alerts_count')
 
 class UserUpdateAdminSerializer(serializers.ModelSerializer):
     """Serializer for admin to update user details."""
@@ -63,8 +64,8 @@ class UserUpdateAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'email', 'first_name', 'last_name', 'role', 
-            'phone_number', 'is_active'
+            'email', 'full_name', 'role', 
+            'phone_number', 'is_active', 'status'
         )
 
 class SystemStatusSerializer(serializers.Serializer):
