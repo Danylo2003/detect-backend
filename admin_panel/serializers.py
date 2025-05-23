@@ -52,7 +52,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'email', 'first_name', 'last_name', 'role', 'phone_number',
+            'id', 'email', 'full_name', 'role', 'phone_number',
             'profile_picture', 'date_joined', 'last_login', 'is_active',
             'subscription_details', 'cameras_count', 'alerts_count'
         )
